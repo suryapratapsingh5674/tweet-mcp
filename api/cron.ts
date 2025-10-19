@@ -78,24 +78,27 @@ export default async function handler(req: any, res: any) {
       return;
     }
 
-    // 1) Gather latest tech items
-    const lists = await Promise.allSettled(FEEDS.map(fetchRss));
-    const items = lists.flatMap(r => r.status === 'fulfilled' ? r.value : []);
-    if (!items.length) throw new Error('No RSS items fetched');
-    // pick the most recent by pubDate or fallback first
-    const sorted = items.sort((a, b) => new Date(b.pubDate || 0).getTime() - new Date(a.pubDate || 0).getTime());
-    const pick = sorted[0];
-    const title = pick.title?.trim() || 'Interesting tech update';
-    const link = pick.link || '';
-
-    // 2) Ask Gemini to write a tweet in YOUR voice
-    const styleGuide = `
+    // Randomly select topic type
+    const topicTypes = ['dev_news', 'programming_fact', 'world_problem'];
+    const pickType = topicTypes[Math.floor(Math.random() * topicTypes.length)];
+    let prompt = '';
+    let link = '';
+    if (pickType === 'dev_news') {
+      // Development news from RSS
+      const lists = await Promise.allSettled(FEEDS.map(fetchRss));
+      const items = lists.flatMap(r => r.status === 'fulfilled' ? r.value : []);
+      if (!items.length) throw new Error('No RSS items fetched');
+      const sorted = items.sort((a, b) => new Date(b.pubDate || 0).getTime() - new Date(a.pubDate || 0).getTime());
+      const pick = sorted[0];
+      const title = pick.title?.trim() || 'Interesting tech update';
+      link = pick.link || '';
+      const styleGuide = `
 Your writing style: Casual, direct, authentic. You share personal opinions and insights, not generic advice.
 Use "I" naturally when sharing your view. Ask questions to engage. Keep it conversational.
 1-2 emojis max, only if natural. Avoid corporate buzzwords. Mix insight with personality.
 Example tone: "Just tried this new approach. Results? Better than expected. Here's why it matters:"
 `;
-    const prompt = `You are writing a tweet for a developer who has a casual, authentic voice. 
+      prompt = `You are writing a tweet for a developer who has a casual, authentic voice. 
 
 ${styleGuide}
 
@@ -105,10 +108,18 @@ Article: ${title}
 Link: ${link}
 
 Tweet:`;
+    } else if (pickType === 'programming_fact') {
+      // Programming fact prompt
+      prompt = `Share a lesser-known programming fact, tip, or concept. Make it engaging, concise (max 270 chars), and relevant for developers. Use a conversational tone and add 1-2 hashtags if natural.`;
+    } else if (pickType === 'world_problem') {
+      // World problem prompt
+      prompt = `Write a tweet (max 270 chars) highlighting a current world problem (e.g., climate change, digital privacy, AI ethics). Make it insightful, relatable for developers, and encourage positive action or awareness. Use a conversational tone and add 1-2 hashtags if natural.`;
+    }
+
     const gen = await callGemini(prompt, GEMINI_API_KEY, GEMINI_MODEL, GEMINI_API_BASE);
     const finalText = clampTweet(gen + (link ? ` ${link}` : ''));
 
-    // 3) Post to X
+    // Post to X
     const client = new TwitterApi({
       appKey: TWITTER_API_KEY,
       appSecret: TWITTER_API_SECRET,
