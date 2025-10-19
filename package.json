@@ -1,0 +1,39 @@
+{
+  "name": "twitter-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for posting to X (Twitter)",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "tweet": "./dist/cli.js",
+    "tweet-ai": "./dist/tweet-ai.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch",
+    "tweet": "node dist/cli.js",
+    "tweet-ai": "node dist/tweet-ai.js",
+    "gemini:models": "node dist/list-models.js",
+    "bot:once": "node dist/bot-once.js",
+    "mcp": "node dist/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "twitter",
+    "x"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.5.0",
+    "twitter-api-v2": "^1.17.2",
+    "dotenv": "^16.4.5",
+    "node-fetch": "^3.3.2",
+    "rss-parser": "^3.13.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3"
+  }
+}
